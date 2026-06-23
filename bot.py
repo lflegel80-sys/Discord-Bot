@@ -9,7 +9,7 @@ import os
 TOKEN = os.getenv("TOKEN")
 
 # ---------------- GUILD ----------------
-GUILD_ID = 1518947434787770488
+GUILD_ID = 1505354242276462632
 GUILD = discord.Object(id=GUILD_ID)
 
 # ---------------- BOT ----------------
