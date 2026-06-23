@@ -1,0 +1,173 @@
+import discord
+from discord.ext import commands
+from discord import app_commands
+from datetime import datetime
+import asyncio
+
+TOKEN = "MTUxODkzMzk1MDM4NTQ5MjA5OQ.GEZhJG.x0iXUHhxjJEwoxmyJ3CaxFCmFD5tNtE62L2R_c"
+
+GUILD_ID = 1518947434787770488
+GUILD = discord.Object(id=GUILD_ID)
+
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+events = {}
+abwesende = {}
+
+# ---------------- AUFSTELLUNG ----------------
+
+class AufstellungView(discord.ui.View):
+
+    def __init__(self, event_name):
+        super().__init__(timeout=None)
+        self.event_name = event_name
+
+    @discord.ui.button(label="✅ Anmelden", style=discord.ButtonStyle.green)
+    async def anmelden(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        user = interaction.user.display_name
+
+        if user not in events[self.event_name]:
+            events[self.event_name].append(user)
+
+        await self.update(interaction)
+
+    @discord.ui.button(label="❌ Abmelden", style=discord.ButtonStyle.red)
+    async def abmelden(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        user = interaction.user.display_name
+
+        if user in events[self.event_name]:
+            events[self.event_name].remove(user)
+
+        await self.update(interaction)
+
+    async def update(self, interaction: discord.Interaction):
+
+        spieler = "\n".join(events[self.event_name]) or "Noch niemand angemeldet"
+
+        embed = discord.Embed(
+            title="🚗 Familien-Aufstellung",
+            description=f"**Event:** {self.event_name}",
+            color=discord.Color.gold()
+        )
+
+        embed.add_field(
+            name=f"👥 Teilnehmer ({len(events[self.event_name])})",
+            value=spieler,
+            inline=False
+        )
+
+        await interaction.response.edit_message(embed=embed, view=self)
+
+# ---------------- SLASH COMMANDS ----------------
+
+@bot.tree.command(name="aufstellung", description="Erstellt ein Event", guild=GUILD)
+async def aufstellung(interaction: discord.Interaction, event: str):
+
+    events[event] = []
+
+    embed = discord.Embed(
+        title="🚗 Familien-Aufstellung",
+        description=f"Event: {event}",
+        color=discord.Color.gold()
+    )
+
+    embed.add_field(name="Teilnehmer", value="Noch niemand", inline=False)
+
+    await interaction.response.send_message(embed=embed, view=AufstellungView(event))
+
+
+@bot.tree.command(name="abwesenheit", description="Melde dich abwesend", guild=GUILD)
+async def abwesenheit(interaction: discord.Interaction, von: str, bis: str, grund: str):
+
+    abwesende[interaction.user.id] = {
+        "name": interaction.user.name,
+        "von": von,
+        "bis": bis,
+        "grund": grund
+    }
+
+    await interaction.response.send_message(
+        f"📌 Abwesenheit gespeichert bis {bis}"
+    )
+
+
+@bot.tree.command(name="abwesend", description="Zeigt alle Abwesenden", guild=GUILD)
+async def abwesend(interaction: discord.Interaction):
+
+    if not abwesende:
+        await interaction.response.send_message("✅ Niemand abwesend.")
+        return
+
+    text = ""
+
+    for user_id, data in abwesende.items():
+
+        try:
+            user = await bot.fetch_user(user_id)
+
+            text += (
+                f"**{user.name}**\n"
+                f"📅 {data['von']} - {data['bis']}\n"
+                f"📌 {data['grund']}\n\n"
+            )
+        except:
+            pass
+
+    embed = discord.Embed(
+        title="📋 Abwesende Mitglieder",
+        description=text,
+        color=discord.Color.red()
+    )
+
+    await interaction.response.send_message(embed=embed)
+
+# ---------------- AUTO LÖSCH SYSTEM ----------------
+
+async def abwesenheit_checker():
+
+    await bot.wait_until_ready()
+
+    while not bot.is_closed():
+
+        now = datetime.now()
+        to_delete = []
+
+        for user_id, data in abwesende.items():
+
+            try:
+                bis = datetime.strptime(data["bis"], "%d.%m.%Y")
+
+                if now >= bis:
+                    to_delete.append(user_id)
+
+            except:
+                pass
+
+        for user_id in to_delete:
+            del abwesende[user_id]
+            print(f"🧹 Abwesenheit gelöscht: {user_id}")
+
+        await asyncio.sleep(60)
+
+# ---------------- START ----------------
+
+@bot.event
+async def on_ready():
+
+    try:
+        synced = await bot.tree.sync(guild=GUILD)
+        print(f"✅ {len(synced)} Slash Commands synchronisiert.")
+    except Exception as e:
+        print(e)
+
+    print(f"🤖 {bot.user} ist online!")
+
+    bot.loop.create_task(abwesenheit_checker())
+
+bot.run(TOKEN)
