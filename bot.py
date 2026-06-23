@@ -4,83 +4,108 @@ from discord import app_commands
 from datetime import datetime
 import asyncio
 import os
+
+# ---------------- TOKEN ----------------
 TOKEN = os.getenv("TOKEN")
 
+# ---------------- GUILD ----------------
 GUILD_ID = 1518947434787770488
 GUILD = discord.Object(id=GUILD_ID)
 
+# ---------------- BOT ----------------
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# ---------------- STORAGE ----------------
 events = {}
 abwesende = {}
 
-# ---------------- AUFSTELLUNG ----------------
+# =========================================================
+# 🚗 EVENT SYSTEM (Kolonnenfahrt etc.)
+# =========================================================
 
-class AufstellungView(discord.ui.View):
+class EventView(discord.ui.View):
 
     def __init__(self, event_name):
         super().__init__(timeout=None)
         self.event_name = event_name
 
-    @discord.ui.button(label="✅ Anmelden", style=discord.ButtonStyle.green)
-    async def anmelden(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if event_name not in events:
+            events[event_name] = {
+                "dabei": [],
+                "nicht": []
+            }
+
+    @discord.ui.button(label="🟢 Bin dabei", style=discord.ButtonStyle.green)
+    async def dabei(self, interaction: discord.Interaction, button: discord.ui.Button):
 
         user = interaction.user.display_name
 
-        if user not in events[self.event_name]:
-            events[self.event_name].append(user)
+        if user not in events[self.event_name]["dabei"]:
+            events[self.event_name]["dabei"].append(user)
+
+        if user in events[self.event_name]["nicht"]:
+            events[self.event_name]["nicht"].remove(user)
 
         await self.update(interaction)
 
-    @discord.ui.button(label="❌ Abmelden", style=discord.ButtonStyle.red)
-    async def abmelden(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(label="🔴 Kann nicht", style=discord.ButtonStyle.red)
+    async def nicht(self, interaction: discord.Interaction, button: discord.ui.Button):
 
         user = interaction.user.display_name
 
-        if user in events[self.event_name]:
-            events[self.event_name].remove(user)
+        if user not in events[self.event_name]["nicht"]:
+            events[self.event_name]["nicht"].append(user)
+
+        if user in events[self.event_name]["dabei"]:
+            events[self.event_name]["dabei"].remove(user)
 
         await self.update(interaction)
 
     async def update(self, interaction: discord.Interaction):
 
-        spieler = "\n".join(events[self.event_name]) or "Noch niemand angemeldet"
+        dabei = "\n".join(events[self.event_name]["dabei"]) or "Noch niemand"
+        nicht = "\n".join(events[self.event_name]["nicht"]) or "Noch niemand"
 
         embed = discord.Embed(
-            title="🚗 Familien-Aufstellung",
-            description=f"**Event:** {self.event_name}",
+            title=f"🚗 Event: {self.event_name}",
             color=discord.Color.gold()
         )
 
-        embed.add_field(
-            name=f"👥 Teilnehmer ({len(events[self.event_name])})",
-            value=spieler,
-            inline=False
-        )
+        embed.add_field(name="🟢 Dabei", value=dabei, inline=True)
+        embed.add_field(name="🔴 Kann nicht", value=nicht, inline=True)
 
         await interaction.response.edit_message(embed=embed, view=self)
 
-# ---------------- SLASH COMMANDS ----------------
+# =========================================================
+# 📌 EVENT COMMAND
+# =========================================================
 
-@bot.tree.command(name="aufstellung", description="Erstellt ein Event", guild=GUILD)
-async def aufstellung(interaction: discord.Interaction, event: str):
+@bot.tree.command(name="event", description="Erstellt ein Event (z.B. Kolonnenfahrt)", guild=GUILD)
+async def event(interaction: discord.Interaction, name: str):
 
-    events[event] = []
+    events[name] = {
+        "dabei": [],
+        "nicht": []
+    }
 
     embed = discord.Embed(
-        title="🚗 Familien-Aufstellung",
-        description=f"Event: {event}",
+        title=f"🚗 Event: {name}",
+        description="Klicke unten auf einen Button:",
         color=discord.Color.gold()
     )
 
-    embed.add_field(name="Teilnehmer", value="Noch niemand", inline=False)
+    embed.add_field(name="🟢 Dabei", value="Noch niemand", inline=True)
+    embed.add_field(name="🔴 Kann nicht", value="Noch niemand", inline=True)
 
-    await interaction.response.send_message(embed=embed, view=AufstellungView(event))
+    await interaction.response.send_message(embed=embed, view=EventView(name))
 
+# =========================================================
+# 📌 ABWESENHEIT
+# =========================================================
 
 @bot.tree.command(name="abwesenheit", description="Melde dich abwesend", guild=GUILD)
 async def abwesenheit(interaction: discord.Interaction, von: str, bis: str, grund: str):
@@ -96,6 +121,9 @@ async def abwesenheit(interaction: discord.Interaction, von: str, bis: str, grun
         f"📌 Abwesenheit gespeichert bis {bis}"
     )
 
+# =========================================================
+# 📋 ABWESEND LISTE
+# =========================================================
 
 @bot.tree.command(name="abwesend", description="Zeigt alle Abwesenden", guild=GUILD)
 async def abwesend(interaction: discord.Interaction):
@@ -127,7 +155,9 @@ async def abwesend(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed)
 
-# ---------------- AUTO LÖSCH SYSTEM ----------------
+# =========================================================
+# 🔄 AUTO ABWESENHEIT CLEANER
+# =========================================================
 
 async def abwesenheit_checker():
 
@@ -155,7 +185,9 @@ async def abwesenheit_checker():
 
         await asyncio.sleep(60)
 
-# ---------------- START ----------------
+# =========================================================
+# 🤖 READY EVENT
+# =========================================================
 
 @bot.event
 async def on_ready():
@@ -169,5 +201,9 @@ async def on_ready():
     print(f"🤖 {bot.user} ist online!")
 
     bot.loop.create_task(abwesenheit_checker())
+
+# =========================================================
+# 🚀 START
+# =========================================================
 
 bot.run(TOKEN)
