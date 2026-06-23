@@ -3,8 +3,8 @@ from discord.ext import commands
 from discord import app_commands
 from datetime import datetime
 import asyncio
-
-TOKEN = "MTUxODkzMzk1MDM4NTQ5MjA5OQ.GEZhJG.x0iXUHhxjJEwoxmyJ3CaxFCmFD5tNtE62L2R_c"
+import os
+TOKEN = os.getenv("TOKEN")
 
 GUILD_ID = 1518947434787770488
 GUILD = discord.Object(id=GUILD_ID)
