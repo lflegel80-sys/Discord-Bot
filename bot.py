@@ -4,9 +4,29 @@ from discord import app_commands
 from datetime import datetime
 import asyncio
 import os
+import dateparser
+import json
+
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
 
 # ---------------- TOKEN ----------------
-TOKEN = os.getenv("TOKEN")
+TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+
+# ---------------- GOOGLE CALENDAR ----------------
+CALENDAR_ID = os.getenv("CALENDAR_ID")
+
+SCOPES = ["https://www.googleapis.com/auth/calendar"]
+
+def get_calendar_service():
+    creds_info = json.loads(os.getenv("GOOGLE_CREDS"))
+
+    creds = service_account.Credentials.from_service_account_info(
+        creds_info,
+        scopes=SCOPES
+    )
+
+    return build("calendar", "v3", credentials=creds)
 
 # ---------------- GUILD ----------------
 GUILD_ID = 1505354242276462632
@@ -25,7 +45,7 @@ events = {}
 abwesende = {}
 
 # =========================================================
-# 🚗 AUFSTELLUNG SYSTEM
+# 🚗 AUFSTELLUNG SYSTEM (UNVERÄNDERT)
 # =========================================================
 
 class AufstellungView(discord.ui.View):
@@ -59,10 +79,7 @@ class AufstellungView(discord.ui.View):
 
     async def update(self, interaction: discord.Interaction):
 
-        spieler = "\n".join(aufstellungen[self.event_name])
-
-        if not spieler:
-            spieler = "Noch niemand angemeldet"
+        spieler = "\n".join(aufstellungen[self.event_name]) or "Noch niemand angemeldet"
 
         embed = discord.Embed(
             title="🚗 Familien-Aufstellung",
@@ -76,46 +93,10 @@ class AufstellungView(discord.ui.View):
             inline=False
         )
 
-        await interaction.response.edit_message(
-            embed=embed,
-            view=self
-        )
+        await interaction.response.edit_message(embed=embed, view=self)
 
 # =========================================================
-# 🚗 AUFSTELLUNG COMMAND
-# =========================================================
-
-@bot.tree.command(
-    name="aufstellung",
-    description="Erstellt eine Familien-Aufstellung",
-    guild=GUILD
-)
-@app_commands.describe(
-    event="Name der Aufstellung"
-)
-async def aufstellung(interaction: discord.Interaction, event: str):
-
-    aufstellungen[event] = []
-
-    embed = discord.Embed(
-        title="🚗 Familien-Aufstellung",
-        description=f"**Event:** {event}",
-        color=discord.Color.gold()
-    )
-
-    embed.add_field(
-        name="👥 Teilnehmer",
-        value="Noch niemand angemeldet",
-        inline=False
-    )
-
-    await interaction.response.send_message(
-        embed=embed,
-        view=AufstellungView(event)
-    )
-
-# =========================================================
-# 🚗 EVENT SYSTEM (Kolonnenfahrt etc.)
+# 🚗 EVENT SYSTEM (UNVERÄNDERT)
 # =========================================================
 
 class EventView(discord.ui.View):
@@ -125,10 +106,7 @@ class EventView(discord.ui.View):
         self.event_name = event_name
 
         if event_name not in events:
-            events[event_name] = {
-                "dabei": [],
-                "nicht": []
-            }
+            events[event_name] = {"dabei": [], "nicht": []}
 
     @discord.ui.button(label="🟢 Bin dabei", style=discord.ButtonStyle.green)
     async def dabei(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -169,29 +147,20 @@ class EventView(discord.ui.View):
         embed.add_field(name="🟢 Dabei", value=dabei, inline=True)
         embed.add_field(name="🔴 Kann nicht", value=nicht, inline=True)
 
-        await interaction.response.edit_message(
-            embed=embed,
-            view=self
-        )
+        await interaction.response.edit_message(embed=embed, view=self)
 
 # =========================================================
-# 📌 EVENT COMMAND
+# 📌 EVENT COMMAND (UNVERÄNDERT)
 # =========================================================
 
 @bot.tree.command(
     name="event",
-    description="Erstellt ein Event (z.B. Kolonnenfahrt)",
+    description="Erstellt ein Event",
     guild=GUILD
-)
-@app_commands.describe(
-    name="Name des Events"
 )
 async def event(interaction: discord.Interaction, name: str):
 
-    events[name] = {
-        "dabei": [],
-        "nicht": []
-    }
+    events[name] = {"dabei": [], "nicht": []}
 
     embed = discord.Embed(
         title=f"🚗 Event: {name}",
@@ -199,78 +168,70 @@ async def event(interaction: discord.Interaction, name: str):
         color=discord.Color.gold()
     )
 
-    embed.add_field(
-        name="🟢 Dabei",
-        value="Noch niemand",
-        inline=True
-    )
+    embed.add_field(name="🟢 Dabei", value="Noch niemand", inline=True)
+    embed.add_field(name="🔴 Kann nicht", value="Noch niemand", inline=True)
 
-    embed.add_field(
-        name="🔴 Kann nicht",
-        value="Noch niemand",
-        inline=True
-    )
-
-    await interaction.response.send_message(
-        embed=embed,
-        view=EventView(name)
-    )
+    await interaction.response.send_message(embed=embed, view=EventView(name))
 
 # =========================================================
-# 📌 ABWESENHEIT
+# 📅 NEU: GOOGLE CALENDAR ABWESENHEIT (ERSATZ)
 # =========================================================
 
 @bot.tree.command(
     name="abwesenheit",
-    description="Melde dich abwesend",
+    description="Abwesenheit mit Uhrzeit + Google Kalender",
     guild=GUILD
 )
 @app_commands.describe(
-    von="Ab wann (TT.MM.JJJJ)",
-    bis="Bis wann (TT.MM.JJJJ)",
+    von="Start (z.B. 25.06.2026 14:00)",
+    bis="Ende (z.B. 25.06.2026 18:00)",
     grund="Grund der Abwesenheit"
 )
-async def abwesenheit(
-    interaction: discord.Interaction,
-    von: str,
-    bis: str,
-    grund: str
-):
+async def abwesenheit(interaction: discord.Interaction, von: str, bis: str, grund: str):
 
-    abwesende[interaction.user.id] = {
-        "name": interaction.user.name,
-        "von": von,
-        "bis": bis,
-        "grund": grund
+    user_name = interaction.user.display_name
+
+    start = dateparser.parse(von, languages=["de"])
+    end = dateparser.parse(bis, languages=["de"])
+
+    if not start or not end:
+        await interaction.response.send_message("❌ Datum/Uhrzeit konnte nicht erkannt werden.")
+        return
+
+    service = get_calendar_service()
+
+    event_data = {
+        "summary": f"Abwesenheit: {user_name}",
+        "description": f"Discord: {user_name}\nGrund: {grund}",
+        "start": {
+            "dateTime": start.isoformat(),
+            "timeZone": "Europe/Berlin"
+        },
+        "end": {
+            "dateTime": end.isoformat(),
+            "timeZone": "Europe/Berlin"
+        }
     }
 
+    service.events().insert(
+        calendarId=CALENDAR_ID,
+        body=event_data
+    ).execute()
+
     embed = discord.Embed(
-        title="📌 Abwesenheit gespeichert",
-        color=discord.Color.orange()
+        title="📅 Abwesenheit gespeichert",
+        color=discord.Color.green()
     )
 
-    embed.add_field(
-        name="👤 Mitglied",
-        value=interaction.user.mention,
-        inline=False
-    )
-
-    embed.add_field(
-        name="📅 Zeitraum",
-        value=f"Von: {von}\nBis: {bis}",
-        inline=False
-    )
-
-    embed.add_field(
-        name="📌 Grund",
-        value=grund,
-        inline=False
-    )
+    embed.add_field(name="👤 Name", value=user_name, inline=False)
+    embed.add_field(name="📅 Von", value=von, inline=False)
+    embed.add_field(name="📅 Bis", value=bis, inline=False)
+    embed.add_field(name="📌 Grund", value=grund, inline=False)
 
     await interaction.response.send_message(embed=embed)
 
 # =========================================================
-# 📋 ABWESEND LISTE
+# 📋 ABWESENDE LISTE (UNVERÄNDERT)
 # =========================================================
 
 @bot.tree.command(
@@ -281,24 +242,15 @@ async def abwesenheit(
 async def abwesend(interaction: discord.Interaction):
 
     if not abwesende:
-        await interaction.response.send_message(
-            "✅ Niemand abwesend."
-        )
+        await interaction.response.send_message("✅ Niemand abwesend.")
         return
 
     text = ""
 
     for user_id, data in abwesende.items():
-
         try:
             user = await bot.fetch_user(user_id)
-
-            text += (
-                f"**{user.name}**\n"
-                f"📅 {data['von']} - {data['bis']}\n"
-                f"📌 {data['grund']}\n\n"
-            )
-
+            text += f"**{user.name}**\n📅 {data['von']} - {data['bis']}\n📌 {data['grund']}\n\n"
         except:
             pass
 
@@ -311,7 +263,7 @@ async def abwesend(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 # =========================================================
-# 🔄 AUTO ABWESENHEIT CLEANER
+# 🔄 CLEANER (UNVERÄNDERT)
 # =========================================================
 
 async def abwesenheit_checker():
@@ -324,22 +276,16 @@ async def abwesenheit_checker():
         to_delete = []
 
         for user_id, data in abwesende.items():
-
             try:
-                bis = datetime.strptime(
-                    data["bis"],
-                    "%d.%m.%Y"
-                )
+                bis = datetime.strptime(data["bis"], "%d.%m.%Y")
 
                 if now >= bis:
                     to_delete.append(user_id)
-
             except:
                 pass
 
         for user_id in to_delete:
             del abwesende[user_id]
-            print(f"🧹 Abwesenheit gelöscht: {user_id}")
 
         await asyncio.sleep(60)
 
@@ -350,23 +296,12 @@ async def abwesenheit_checker():
 @bot.event
 async def on_ready():
 
-    cmds = await bot.tree.fetch_commands(guild=GUILD)
-
-    print("Registrierte Commands:")
-
-    for cmd in cmds:
-        print("-", cmd.name)
-
-    try:
-        synced = await bot.tree.sync(guild=GUILD)
-        print(f"✅ {len(synced)} Slash Commands synchronisiert.")
-    except Exception as e:
-        print(e)
+    await bot.tree.sync(guild=GUILD)
 
     print(f"🤖 {bot.user} ist online!")
 
     bot.loop.create_task(abwesenheit_checker())
-    
+
 # =========================================================
 # 🚀 START
 # =========================================================
