@@ -350,21 +350,23 @@ async def abwesenheit_checker():
 @bot.event
 async def on_ready():
 
+    cmds = await bot.tree.fetch_commands(guild=GUILD)
+
+    print("Registrierte Commands:")
+
+    for cmd in cmds:
+        print("-", cmd.name)
+
     try:
         synced = await bot.tree.sync(guild=GUILD)
-        print(
-            f"✅ {len(synced)} Slash Commands synchronisiert."
-        )
-
+        print(f"✅ {len(synced)} Slash Commands synchronisiert.")
     except Exception as e:
         print(e)
 
     print(f"🤖 {bot.user} ist online!")
 
-    bot.loop.create_task(
-        abwesenheit_checker()
-    )
-
+    bot.loop.create_task(abwesenheit_checker())
+    
 # =========================================================
 # 🚀 START
 # =========================================================
