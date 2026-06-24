@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "discord-bot-kalender-500416",
+  "private_key_id": "bfd92a7d16413bbb6afb9e5f84c1a51c2752bd15",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDgCk0aANa/1SI6\nR3Bd8USRGaRxZj/M2Hw3q4sihwfw6PfdmeWEWkG2O8lGSQp++Zv2qOJ3Wm1jaUvU\nj7y0ZdDXiGwY1V0poYiyEmeQ6qfNlpMn+bh78cvXaI74rssqteCKgtDy8ElWkul8\nh34jp+F3WlLMHH76SGc4Kli+ScsZu6+PLZxbas+2fVHtSbNvQoYqyI0EpN8Yi7hs\nF0/lmCn023ENAMTK9guTsK0Xsh4DAAu1PoeW2r3wh6UZfyUlGlG3DaChZvK+Fcdh\nV1Qq05nXzy5TPyuF+9tSa6oqPKGgO8dD6esa+D5eX22L3vNMtRLsLye4eDTGZpll\nC13Lm7uvAgMBAAECggEABCicysVGNzRdGMjXsJ64X5sivsofmA1SrPPdtsvb3WBt\nrWrcZEsKmjfc4hWcAMRgXUFARufiTOyY8D6kyZJ0QHPzUbiwLIQnleqaiomYiMvp\nOl47yu0vk/WIZdxUwBu1Kc0I1OGZ8uXyOJIJSN8mY8FE9S34O2wZomTC1fFnuDgH\nQaFge+Jm6WWNasGR7PZook9rvGmG8qkKvkf3AtVFJWhp5BgmIBCBkvnEXDvVzq5q\nfzYmWTYoaC9UR+lvdkRR8pxbcK3IDHl8My6GArsHs15OInOmA0Jp9G0s4RO572Jn\nud5m+tkQbT5uhqA/7fTL5SvanRmEHsZj7NPmecfA/QKBgQD5zPh7EWSBaHrHe4UO\nhXde4AgJO3Pa+OmOYRqEBO030gEoieWNNiJ5DLYnydAYdLgfyUGKNvlpaZxfNxAw\nWF56kXopK80cDoC8rPnlannKN+5XohGsUw5a+PVfLv2okIQ3nrE4h5WiZbnVqu4c\n4PxCfkNpC0xlXXfXFtx8FjxSqwKBgQDlmat6dezitQcavb1YhEqN8McHWI0B+s8C\nGLo8ZnLDRp1nPBMRqEO1Jf/Q9QlClHEhWME2U+JAkX8dOAlyEvYWSxNMT8fFlhyi\nL6K7ZziTdcoBW3ga8ZoEVCx4LEGZ0GiEiicoXo43vLOH34PRbp7bKyi2X7O1QQ1V\n/P14PXqbDQKBgQCZZsw5F2c3KSgtFKeTUVcLBl0o/j+Zez5CV1NnO3dJzkcz0+sK\nGvJ0j9/U81Q9kH/51SfQbw4fM+H5fuEML1hlwKzaV7GvxyA7vaYAwrBkBJDzc+2S\ne7bXGwfkGgFf4M+xMFz4sBquDfZfRobPaULAurU+7tdNcGbFyZ5A/Y6x3QKBgHjP\nZv9E1aRkhJx5ggv1cBVHwDIJUgjco9gCktv9PB2sJl6Pqaj81MOYfwbAKGM0IGLf\nhKrFcKNw62XAepffikUos7rPr9ozplVgo0vggFB3Bhe4vXXP8q6ca9m/z7TTiGtV\nFk2Tk1mYnQ69eWrVvhismPt9V93joNTCDc0a7ExxAoGAFmxApWb4Dp4j8KVuhTgw\nw6ukegIyrGqj3SI8xtJ5zJC2NCx+YepvG5a35hzrNCrEKAsFXYlD9IWbdWDA3I2/\nBXp0PyzsZOaVU0+q8ma3jyzwNDKifZQQPAH2Uz9bbatY71ZCG1YXPI/P+wyoXVZL\nK9+pqMergGLEBMs9JSl1G/w=\n-----END PRIVATE KEY-----\n",
+  "client_email": "discord-bot@discord-bot-kalender-500416.iam.gserviceaccount.com",
+  "client_id": "113621076592762859900",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/discord-bot%40discord-bot-kalender-500416.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
