@@ -11,7 +11,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 # ---------------- TOKEN ----------------
-TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+TOKEN = os.getenv("TOKEN")
 
 # ---------------- GOOGLE CALENDAR ----------------
 CALENDAR_ID = os.getenv("CALENDAR_ID")
